@@ -13,7 +13,7 @@ A command-line tool to convert between CSV and Excel (XLSX) files using Java and
 
 ## Requirements
 
-- Java 11 or higher
+- Java 21 or higher
 - Maven 3.6 or higher
 
 ## Building
