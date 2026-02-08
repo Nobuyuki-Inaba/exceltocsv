@@ -76,7 +76,7 @@ public class ExcelToCsvConverter {
                     double numValue = cell.getNumericCellValue();
                     // If it's a whole number, format without decimal places
                     if (numValue == (long) numValue) {
-                        return String.format("%d", (long) numValue);
+                        return "%d".formatted((long) numValue);
                     } else {
                         return String.valueOf(numValue);
                     }
