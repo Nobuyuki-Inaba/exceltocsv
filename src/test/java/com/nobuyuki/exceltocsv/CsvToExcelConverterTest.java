@@ -72,6 +72,46 @@ public class CsvToExcelConverterTest {
     }
 
     @Test
+    public void testCustomDelimiter() throws IOException {
+        String csvContent = "Name;Age;City\nJohn;30;Tokyo";
+        writeToFile(tempCsvFile, csvContent);
+
+        CsvToExcelConverter semicolonConverter = new CsvToExcelConverter(StandardCharsets.UTF_8, ";");
+        semicolonConverter.convert(tempCsvFile, tempExcelFile);
+
+        try (Workbook workbook = WorkbookFactory.create(tempExcelFile)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+            assertEquals("Name", headerRow.getCell(0).getStringCellValue());
+            assertEquals("Age", headerRow.getCell(1).getStringCellValue());
+            assertEquals("City", headerRow.getCell(2).getStringCellValue());
+            Row dataRow = sheet.getRow(1);
+            assertEquals("John", dataRow.getCell(0).getStringCellValue());
+            assertEquals(30.0, dataRow.getCell(1).getNumericCellValue(), 0.001);
+            assertEquals("Tokyo", dataRow.getCell(2).getStringCellValue());
+        }
+    }
+
+    @Test
+    public void testCustomEncoding() throws IOException {
+        String csvContent = "名前,年齢\n太郎,25";
+        writeToFile(tempCsvFile, csvContent);
+
+        CsvToExcelConverter utf8Converter = new CsvToExcelConverter(StandardCharsets.UTF_8, ",");
+        utf8Converter.convert(tempCsvFile, tempExcelFile);
+
+        try (Workbook workbook = WorkbookFactory.create(tempExcelFile)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+            assertEquals("名前", headerRow.getCell(0).getStringCellValue());
+            assertEquals("年齢", headerRow.getCell(1).getStringCellValue());
+            Row dataRow = sheet.getRow(1);
+            assertEquals("太郎", dataRow.getCell(0).getStringCellValue());
+            assertEquals(25.0, dataRow.getCell(1).getNumericCellValue(), 0.001);
+        }
+    }
+
+    @Test
     public void testNumericValueConversion() throws IOException {
         String csvContent = "Value\n123\n456.78\n-999";
         writeToFile(tempCsvFile, csvContent);

@@ -96,6 +96,46 @@ public class ExcelToCsvConverterTest {
     }
 
     @Test
+    public void testCustomDelimiter() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Sheet1");
+            Row row = sheet.createRow(0);
+            row.createCell(0).setCellValue("Name");
+            row.createCell(1).setCellValue("Age");
+            try (FileOutputStream outputStream = new FileOutputStream(tempExcelFile)) {
+                workbook.write(outputStream);
+            }
+        }
+
+        ExcelToCsvConverter semicolonConverter = new ExcelToCsvConverter(StandardCharsets.UTF_8, ";");
+        semicolonConverter.convert(tempExcelFile, tempCsvFile);
+
+        String content = readFile(tempCsvFile);
+        assertTrue(content.contains("Name;Age"));
+        assertFalse(content.contains("Name,Age"));
+    }
+
+    @Test
+    public void testCustomEncoding() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Sheet1");
+            Row row = sheet.createRow(0);
+            row.createCell(0).setCellValue("名前");
+            row.createCell(1).setCellValue("年齢");
+            try (FileOutputStream outputStream = new FileOutputStream(tempExcelFile)) {
+                workbook.write(outputStream);
+            }
+        }
+
+        ExcelToCsvConverter utf8Converter = new ExcelToCsvConverter(StandardCharsets.UTF_8, ",");
+        utf8Converter.convert(tempExcelFile, tempCsvFile);
+
+        String content = readFile(tempCsvFile);
+        assertTrue(content.contains("名前"));
+        assertTrue(content.contains("年齢"));
+    }
+
+    @Test
     public void testExcelWithSpecialCharacters() throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Sheet1");
