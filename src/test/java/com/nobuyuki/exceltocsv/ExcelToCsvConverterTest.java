@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -155,6 +156,101 @@ public class ExcelToCsvConverterTest {
         // Values with special characters should be properly escaped
         assertTrue(content.contains("\"Value with, comma\""));
         assertTrue(content.contains("\"Value with \"\"quotes\"\"\""));
+    }
+
+    @Test
+    public void testListSheets() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            workbook.createSheet("Sheet1");
+            workbook.createSheet("売上データ");
+            workbook.createSheet("マスタ");
+            try (FileOutputStream out = new FileOutputStream(tempExcelFile)) {
+                workbook.write(out);
+            }
+        }
+
+        List<String> names = converter.listSheets(tempExcelFile);
+
+        assertEquals(3, names.size());
+        assertEquals("Sheet1", names.get(0));
+        assertEquals("売上データ", names.get(1));
+        assertEquals("マスタ", names.get(2));
+    }
+
+    @Test
+    public void testConvertBySheetName() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet s1 = workbook.createSheet("Sheet1");
+            s1.createRow(0).createCell(0).setCellValue("from-sheet1");
+
+            Sheet s2 = workbook.createSheet("売上データ");
+            s2.createRow(0).createCell(0).setCellValue("from-urriage");
+
+            try (FileOutputStream out = new FileOutputStream(tempExcelFile)) {
+                workbook.write(out);
+            }
+        }
+
+        converter.convert(tempExcelFile, tempCsvFile, "売上データ");
+
+        String content = readFile(tempCsvFile);
+        assertTrue(content.contains("from-urriage"));
+        assertFalse(content.contains("from-sheet1"));
+    }
+
+    @Test
+    public void testConvertBySheetIndex() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet s0 = workbook.createSheet("Sheet1");
+            s0.createRow(0).createCell(0).setCellValue("index0");
+
+            Sheet s1 = workbook.createSheet("Sheet2");
+            s1.createRow(0).createCell(0).setCellValue("index1");
+
+            try (FileOutputStream out = new FileOutputStream(tempExcelFile)) {
+                workbook.write(out);
+            }
+        }
+
+        converter.convert(tempExcelFile, tempCsvFile, 1);
+
+        String content = readFile(tempCsvFile);
+        assertTrue(content.contains("index1"));
+        assertFalse(content.contains("index0"));
+    }
+
+    @Test
+    public void testConvertBySheetNameNotFound() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            workbook.createSheet("Sheet1");
+            try (FileOutputStream out = new FileOutputStream(tempExcelFile)) {
+                workbook.write(out);
+            }
+        }
+
+        try {
+            converter.convert(tempExcelFile, tempCsvFile, "NonExistent");
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("NonExistent"));
+        }
+    }
+
+    @Test
+    public void testConvertBySheetIndexOutOfRange() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            workbook.createSheet("Sheet1");
+            try (FileOutputStream out = new FileOutputStream(tempExcelFile)) {
+                workbook.write(out);
+            }
+        }
+
+        try {
+            converter.convert(tempExcelFile, tempCsvFile, 5);
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("5"));
+        }
     }
 
     private String readFile(File file) throws IOException {
